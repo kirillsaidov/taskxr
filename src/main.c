@@ -34,7 +34,7 @@ int32_t main(const int argc, const char* argv[]) {
         // launch daemon process
         cj_loop_detached(jobs);
     } else if (vt_str_equals_z(command, "stop")) {
-        printf("stop\n");
+        printf("stop: unimplemented, WIP\n");
     } else if (vt_str_equals_z(command, "validate")) {
         printf(">> Validating jobs file: %s\n", jobs_file);
         if (!cj_validate_cron_file(jobs_file)) printf(">> Validation failed!\n");
