@@ -73,12 +73,24 @@ void cj_loop(const vt_vec_t *const jobs) {
     }
 }
 
-void cj_loop_detached(const vt_vec_t *const jobs) {
+void cj_loop_detached(const char *const jobs_file, const char *const lock_file) {
+    // parse jobs
+    vt_vec_t *jobs = cj_parse_cron_file(jobs_file);
+    if (!vt_vec_len(jobs)) {
+        printf(">> No jobs found.\n");
+        return;
+    }
+
     // start child process
     pid_t pid = fork();
     if (pid == 0) {
         // detach child process and create a new session
         setsid();
+
+        // add job to lock file
+        cj_lock_add_job(lock_file, jobs_file, getpid());
+
+        // run jobs loop
         cj_loop(jobs);
         exit(EXIT_SUCCESS); // exit child when done
     } else return;
@@ -185,11 +197,52 @@ void cj_lock_list_jobs(const char *const lock_file) {
     }
 }
 
-void cj_lock_add_job(const char *const lock_file, const char *const jobs_file) {
+void cj_lock_add_job(const char *const lock_file, const char *const jobs_file, const pid_t pid) {
+    // get absolute path of the jobs file
+    char absolute_path[CJ_MAX_COMMAND_LENGTH];
+    realpath(jobs_file, absolute_path);
 
+    // append to lock file
+    vt_file_writefc(lock_file, false, true, true, "%d %s", pid, absolute_path);
 }
 
 void cj_lock_remove_job(const char *const lock_file, const char *const jobs_file) {
+    vt_vec_t *jobs = cj_lock_parse_jobs(lock_file);
+    if (!jobs) {
+        printf(">> Failed to read jobs.lock file: %s\n", lock_file);
+        return;
+    } else if (!vt_vec_len(jobs)) {
+        printf(">> No jobs running.\n");
+        return;
+    }
 
+    // parse pid
+    const pid_t pid = vt_str_is_numeric_z(jobs_file, strnlen(jobs_file, 16))
+        ? vt_conv_str_to_i32(jobs_file)
+        : -1;    
+
+    // remove lock old lock file
+    vt_path_remove(lock_file);
+
+    // remove jobs
+    char buffer[CJ_MAX_COMMAND_LENGTH];
+    VT_FOREACH(i, 0, vt_vec_len(jobs)) {
+        const struct LockedJob job = *(struct LockedJob*)vt_vec_get(jobs, i);
+
+        // check if job should be stopped
+        const bool should_stop = pid > 0
+            ? (job.pid == pid)
+            : vt_str_equals_z(realpath(jobs_file, buffer), job.filepath);
+        
+        // stop job TODO: here
+        // snprintf(buffer, sizeof(buffer), "kill -9 %d", pid);
+        // if (should_stop && system(buffer) == 0) {
+        //     printf(">> Job stopped: PID=%d, file=%s\n", job.pid, job.filepath);
+        // } else if (!should_stop) {
+        //     cj_lock_add_job(lock_file, job.filepath, job.pid);
+        // } else {
+        //     printf(">> Failed to stop the job: PID=%d, file=%s\n", job.pid, job.filepath);
+        // }
+    }
 }
 
