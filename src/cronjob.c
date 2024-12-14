@@ -144,3 +144,52 @@ bool cj_validate_cron_file(const char *const jobs_file) {
     fclose(file);
     return is_valid;
 }
+
+vt_vec_t *cj_lock_parse_jobs(const char *const lock_file) {
+    FILE *file = fopen(lock_file, "r");
+    if (!file) return NULL;
+
+    // parse jobs
+    char line[CJ_MAX_COMMAND_LENGTH];
+    vt_vec_t *jobs = vt_vec_create(VT_ARRAY_DEFAULT_INIT_ELEMENTS, sizeof(struct LockedJob), alloctr);
+    while (fgets(line, sizeof(line), file)) {
+        if (line[0] == '#' || strlen(line) <= 1) {
+            continue;
+        }
+
+        // parse active jobs
+        struct LockedJob job;
+        sscanf(line, "%d %[^\n]", &job.pid, job.filepath);
+        vt_vec_push_back(jobs, &job);
+    }
+
+    fclose(file);
+    return jobs;
+}
+
+void cj_lock_list_jobs(const char *const lock_file) {
+    vt_vec_t *jobs = cj_lock_parse_jobs(lock_file);
+    if (!jobs) {
+        printf(">> Failed to read jobs.lock file: %s\n", lock_file);
+        return;
+    } else if (!vt_vec_len(jobs)) {
+        printf(">> No jobs running.\n");
+        return;
+    }
+
+    // list active jobs
+    printf("%5s\t%s\n", "PID", "Jobs file");
+    VT_FOREACH(i, 0, vt_vec_len(jobs)) {
+        const struct LockedJob job = *(struct LockedJob*)vt_vec_get(jobs, i);
+        printf("%5d\t%s\n", job.pid, job.filepath);
+    }
+}
+
+void cj_lock_add_job(const char *const lock_file, const char *const jobs_file) {
+
+}
+
+void cj_lock_remove_job(const char *const lock_file, const char *const jobs_file) {
+
+}
+

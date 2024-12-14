@@ -35,6 +35,8 @@ int32_t main(const int argc, const char* argv[]) {
         cj_loop_detached(jobs);
     } else if (vt_str_equals_z(command, "stop")) {
         printf("stop: unimplemented, WIP\n");
+    } else if (vt_str_equals_z(command, "list")) {
+        cj_lock_list_jobs(taskxr_lock_file);
     } else if (vt_str_equals_z(command, "validate")) {
         printf(">> Validating jobs file: %s\n", jobs_file);
         if (!cj_validate_cron_file(jobs_file)) printf(">> Validation failed!\n");

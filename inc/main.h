@@ -13,6 +13,7 @@ PROJECT_NAME " v" PROJECT_VERSION " -- a simple cron-like utility to schedule ta
 "\nCOMMANDS: \n" \
 "   serve   launch taskxr in background with custom jobs.cfg\n" \
 "    stop   stop taskxr daemon identified with custom jobs.cfg\n" \
+"    list   list running taskxr jobs\n" \
 "validate   validate jobs.cfg format\n" \
 "    help   This help message.\n" \
 "\nNOTE: \n" \

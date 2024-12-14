@@ -15,6 +15,12 @@ struct CronJob {
     char command[CJ_MAX_COMMAND_LENGTH];
 };
 
+// locked job object (launched background jobs)
+struct LockedJob {
+    pid_t pid;
+    char filepath[CJ_MAX_COMMAND_LENGTH];
+};
+
 extern int32_t cj_parse_time(const char *const time_str);
 extern struct CronJob cj_parse_cron_line(const char *const line);
 extern vt_vec_t *cj_parse_cron_file(const char *const jobs_file);
@@ -26,4 +32,9 @@ extern void cj_execute_command(const char *const command);
 
 extern bool cj_validate_cron_line(const char *const line);
 extern bool cj_validate_cron_file(const char *const jobs_file);
+
+extern vt_vec_t *cj_lock_parse_jobs(const char *const lock_file);
+extern void cj_lock_list_jobs(const char *const lock_file);
+extern void cj_lock_add_job(const char *const lock_file, const char *const jobs_file);
+extern void cj_lock_remove_job(const char *const lock_file, const char *const jobs_file);
 
