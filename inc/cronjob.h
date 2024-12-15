@@ -36,5 +36,5 @@ extern bool cj_validate_cron_file(const char *const jobs_file);
 extern vt_vec_t *cj_lock_parse_jobs(const char *const lock_file);
 extern void cj_lock_list_jobs(const char *const lock_file);
 extern void cj_lock_add_job(const char *const lock_file, const char *const jobs_file, const pid_t pid);
-extern void cj_lock_remove_job(const char *const lock_file, const char *const jobs_file);
+extern void cj_lock_stop_job(const char *const lock_file, const char *const jobs_file);
 

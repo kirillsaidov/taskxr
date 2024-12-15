@@ -24,10 +24,11 @@ int32_t main(const int argc, const char* argv[]) {
     const char *const command = argv[1];
     const char *const jobs_file = argc > 2 ? argv[2] : taskxr_jobs_file;
     if (vt_str_equals_z(command, "serve")) {
-        cj_loop_detached(jobs_file, taskxr_lock_file); // launch daemon process
+        // launch daemon process
+        cj_loop_detached(jobs_file, taskxr_lock_file); 
     } else if (vt_str_equals_z(command, "stop")) {
-        printf("stop: unimplemented, WIP\n");
-        // cj_lock_remove_job(taskxr_lock_file, jobs_file);
+        // stop daemon process
+        cj_lock_stop_job(taskxr_lock_file, jobs_file);
     } else if (vt_str_equals_z(command, "list")) {
         cj_lock_list_jobs(taskxr_lock_file);
     } else if (vt_str_equals_z(command, "validate")) {

@@ -1,5 +1,7 @@
 #include "cronjob.h"
 
+static int cj_kill_job(const pid_t pid);
+
 int32_t cj_parse_time(const char *const time_str) {
     if (strncmp(time_str, "*", CJ_MAX_COMMAND_LENGTH) == 0) {
         return -1;
@@ -206,7 +208,7 @@ void cj_lock_add_job(const char *const lock_file, const char *const jobs_file, c
     vt_file_writefc(lock_file, false, true, true, "%d %s", pid, absolute_path);
 }
 
-void cj_lock_remove_job(const char *const lock_file, const char *const jobs_file) {
+void cj_lock_stop_job(const char *const lock_file, const char *const jobs_file) {
     vt_vec_t *jobs = cj_lock_parse_jobs(lock_file);
     if (!jobs) {
         printf(">> Failed to read jobs.lock file: %s\n", lock_file);
@@ -234,15 +236,28 @@ void cj_lock_remove_job(const char *const lock_file, const char *const jobs_file
             ? (job.pid == pid)
             : vt_str_equals_z(realpath(jobs_file, buffer), job.filepath);
         
-        // stop job TODO: here
-        // snprintf(buffer, sizeof(buffer), "kill -9 %d", pid);
-        // if (should_stop && system(buffer) == 0) {
-        //     printf(">> Job stopped: PID=%d, file=%s\n", job.pid, job.filepath);
-        // } else if (!should_stop) {
-        //     cj_lock_add_job(lock_file, job.filepath, job.pid);
-        // } else {
-        //     printf(">> Failed to stop the job: PID=%d, file=%s\n", job.pid, job.filepath);
-        // }
+        // stop job 
+        if (should_stop) {
+            const int ret = cj_kill_job(job.pid);
+            if (ret < 0) printf(">> Failed to stop the job: PID=%d, file=%s\n", job.pid, job.filepath);
+            else printf(">> Job stopped: PID=%d, file=%s\n", job.pid, job.filepath);
+        } else {
+            cj_lock_add_job(lock_file, job.filepath, job.pid);
+        }
     }
+}
+
+static int cj_kill_job(const pid_t pid) {
+    // gracefully terminate process
+    kill(pid, SIGTERM);
+
+    // check for status
+    int status = 0;
+    waitpid(pid, &status, WNOHANG);
+    if (WIFEXITED(status) || WIFSIGNALED(status)) {
+        return 0;
+    }
+
+    return -1;
 }
 
